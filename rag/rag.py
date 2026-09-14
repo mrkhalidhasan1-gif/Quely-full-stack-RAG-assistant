@@ -1,107 +1,80 @@
-import json
 import os
 import re
 import sys
-
 import numpy as np
+import pymongo
 import pymupdf
 from dotenv import load_dotenv
 from docx import Document
 from groq import Groq
 from sentence_transformers import SentenceTransformer
 
-
-# ==========================================
-# CONFIGURATION
-# ==========================================
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_ENV_PATH = os.path.join(BASE_DIR, "..", "backend", ".env")
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
-load_dotenv(dotenv_path=ENV_PATH)
+load_dotenv(BACKEND_ENV_PATH)
+load_dotenv(ENV_PATH, override=True)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MONGO_URI = os.getenv("MONGO_URI")
 GROQ_MODEL = "openai/gpt-oss-120b"
+MONGO_DB = os.getenv("MONGO_DB", "test")
+MONGO_COLLECTION = "document_chunks"
 
 CHUNK_SIZE = 800
 OVERLAP = 200
 TOP_K = 8
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+VECTOR_INDEX = "vector_index"
 
-
-# ==========================================
-# DOCUMENT PATH
-# ==========================================
-
-if len(sys.argv) > 1:
-    DOCUMENT_PATH = sys.argv[1]
-else:
-    print("Please provide a document path.")
-    print("Example:")
-    print('python3 rag.py "/tmp/quely-uploads/file.pdf"')
-    sys.exit(1)
-
-
-# Every uploaded document gets its own vector file
-upload_id = os.path.basename(DOCUMENT_PATH)
-VECTOR_PATH = os.path.join(BASE_DIR, f"vectors_{upload_id}.json")
-
-
-# ==========================================
-# GROQ CLIENT
-# ==========================================
+DOCUMENT_PATH = sys.argv[1] if len(sys.argv) > 1 else None
+DOCUMENT_ID = os.path.basename(DOCUMENT_PATH) if DOCUMENT_PATH else None
 
 if not GROQ_API_KEY:
-    print("ERROR: GROQ_API_KEY is missing from .env")
+    print("ERROR: GROQ_API_KEY is missing.")
+    sys.exit(1)
+
+if not MONGO_URI:
+    print("ERROR: MONGO_URI is missing.")
     sys.exit(1)
 
 try:
     groq_client = Groq(api_key=GROQ_API_KEY)
+    mongo_client = pymongo.MongoClient(MONGO_URI)
+    mongo_client.admin.command("ping")
+    chunks_collection = mongo_client[MONGO_DB][MONGO_COLLECTION]
 except Exception as error:
-    print("Groq client initialization failed:")
+    print("Database/client initialization failed:")
     print(error)
     sys.exit(1)
 
+_embedding_model = None
 
-# ==========================================
-# 1. CLEAN TEXT
-# ==========================================
+def get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        print("Loading embedding model...")
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+    return _embedding_model
 
 def clean_text(text):
     if not text:
         return ""
-
     text = text.replace("\xa0", " ")
     text = text.replace("\r", "\n")
-
-    # Join words broken by PDF line wrapping
     text = re.sub(r"(?<=[A-Za-z])\n(?=[a-z])", "", text)
-
-    # Keep paragraph/line boundaries for heading detection
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
-
     return text.strip()
-
-
-# ==========================================
-# 2. EXTRACT PDF
-# ==========================================
 
 def extract_pdf(pdf_path):
     doc = pymupdf.open(pdf_path)
     pages = []
-
     for page_number, page in enumerate(doc, start=1):
-        raw_text = page.get_text("text")
-        pages.append({"page": page_number, "text": clean_text(raw_text)})
-
+        pages.append({"page": page_number, "text": clean_text(page.get_text("text"))})
     doc.close()
     return pages
-
-
-# ==========================================
-# 3. EXTRACT DOCX / TXT / WEBSITE
-# ==========================================
 
 def extract_document(file_path):
     extension = os.path.splitext(file_path)[1].lower()
@@ -117,57 +90,38 @@ def extract_document(file_path):
     if extension == ".txt":
         with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
             text = file.read()
-
         return [{"page": 1, "text": clean_text(text)}]
 
     raise ValueError(f"Unsupported document type: {extension}")
 
-
-# ==========================================
-# 4. HEADING DETECTION
-# ==========================================
-
 def is_heading(line):
     line = line.strip()
-
     if not line:
         return False
 
     words = line.split()
-
     if len(words) > 10:
         return False
 
-    # Example: PERSONAL PROJECTS
     if line.isupper():
         return True
 
-    # Example: Chapter 1 / Section 2
     if re.match(r"^(?:Chapter|Section|Part|Topic)\s+\d+.*$", line, flags=re.I):
         return True
 
-    # Example: 1. Introduction / 2.1 Experience
     if re.match(r"^\d+(\.\d+)*\s+[A-Z].*$", line):
         return True
 
-    # Example: Professional Summary / Technical Skills
     if re.match(r"^[A-Z][A-Za-z0-9&/:-]+(?:\s+[A-Z][A-Za-z0-9&/:-]+){0,7}$", line):
         return True
 
     return False
 
-
-# ==========================================
-# 5. CHUNK CREATION
-# ==========================================
-
 def split_section(text, section, page_number):
     text = re.sub(r"\s+", " ", text).strip()
-
     if not text:
         return []
 
-    # Split around sentences
     parts = re.split(r"(?<=[.!?])\s+", text)
     parts = [part.strip() for part in parts if part.strip()]
 
@@ -185,7 +139,6 @@ def split_section(text, section, page_number):
                     "section": section
                 })
 
-            # If one sentence itself is too large
             if len(part) > CHUNK_SIZE:
                 words = part.split()
                 temp = ""
@@ -200,7 +153,6 @@ def split_section(text, section, page_number):
                                 "page": page_number,
                                 "section": section
                             })
-
                         temp = word
 
                 current = temp
@@ -214,15 +166,12 @@ def split_section(text, section, page_number):
             "section": section
         })
 
-    # Add overlap
     if len(chunks) > 1:
         for i in range(len(chunks) - 1):
-            current_text = chunks[i]["text"]
-            overlap_text = current_text[-OVERLAP:]
+            overlap_text = chunks[i]["text"][-OVERLAP:]
             chunks[i + 1]["text"] = overlap_text + " " + chunks[i + 1]["text"]
 
     return chunks
-
 
 def create_chunks(pages):
     chunks = []
@@ -230,7 +179,6 @@ def create_chunks(pages):
     for page in pages:
         page_number = page["page"]
         raw_text = page["text"]
-
         lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
 
         current_section = "General"
@@ -242,7 +190,6 @@ def create_chunks(pages):
                     joined_text = " ".join(section_text)
                     chunks.extend(split_section(joined_text, current_section, page_number))
                     section_text = []
-
                 current_section = line
             else:
                 section_text.append(line)
@@ -253,16 +200,8 @@ def create_chunks(pages):
 
     return chunks
 
-
-# ==========================================
-# 6. EMBEDDINGS
-# ==========================================
-
 def create_embeddings(chunks):
-    print("Loading embedding model...")
-
-    model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-
+    model = get_embedding_model()
     texts = [chunk["text"] for chunk in chunks]
 
     print("Creating embeddings...")
@@ -275,82 +214,122 @@ def create_embeddings(chunks):
 
     return model, np.asarray(embeddings, dtype=np.float32)
 
+def save_vectors(chunks, embeddings, document_id=None, user_id=None, document_name=""):
+    if not document_id:
+        document_id = DOCUMENT_ID
 
-# ==========================================
-# 7. SAVE VECTORS
-# ==========================================
+    if not document_id:
+        raise ValueError("Document ID is required.")
 
-def save_vectors(chunks, embeddings):
+    chunks_collection.delete_many({"documentId": document_id})
+
     data = []
 
     for chunk, embedding in zip(chunks, embeddings):
         data.append({
+            "documentId": document_id,
+            "userId": user_id,
+            "documentName": document_name,
             "text": chunk["text"],
             "page": chunk["page"],
             "section": chunk["section"],
             "embedding": embedding.tolist()
         })
 
-    with open(VECTOR_PATH, "w", encoding="utf-8") as file:
-        json.dump(data, file)
+    if data:
+        chunks_collection.insert_many(data)
 
-    print("Vectors saved successfully.")
+    print(f"{len(data)} chunks saved to MongoDB.")
 
+def load_vectors(document_id=None):
+    document_id = document_id or DOCUMENT_ID
 
-# ==========================================
-# 8. LOAD VECTORS
-# ==========================================
-
-def load_vectors():
-    if not os.path.exists(VECTOR_PATH):
+    if not document_id:
         return None
 
     try:
-        with open(VECTOR_PATH, "r", encoding="utf-8") as file:
-            data = json.load(file)
+        data = list(
+            chunks_collection.find(
+                {"documentId": document_id},
+                {
+                    "_id": 0,
+                    "documentId": 1,
+                    "userId": 1,
+                    "documentName": 1,
+                    "text": 1,
+                    "page": 1,
+                    "section": 1,
+                    "embedding": 1
+                }
+            )
+        )
 
         return data if data else None
-
-    except Exception:
+    except Exception as error:
+        print("MongoDB vector load error:")
+        print(error)
         return None
 
-
-# ==========================================
-# 9. SEMANTIC SEARCH
-# ==========================================
-
-def search(question, model, chunks, embeddings, top_k=TOP_K):
+def search(question, model, chunks=None, embeddings=None, top_k=TOP_K, document_id=None, user_id=None):
     question = question.strip()
 
     if not question:
         return []
 
-    # BGE query instruction
+    document_id = document_id or DOCUMENT_ID
+
+    if not document_id:
+        return []
+
     query = "Represent this sentence for searching relevant passages: " + question
+    query_embedding = model.encode(query, normalize_embeddings=True).tolist()
 
-    query_embedding = model.encode(query, normalize_embeddings=True)
+    filters = [{"documentId": {"$eq": document_id}}]
 
-    # Cosine similarity because embeddings are normalized
-    scores = embeddings @ query_embedding
+    if user_id:
+        filters.append({"userId": {"$eq": user_id}})
 
-    ranked = []
+    vector_filter = filters[0] if len(filters) == 1 else {"$and": filters}
 
-    for index, score in enumerate(scores):
-        ranked.append({
-            "score": float(score),
-            "text": chunks[index]["text"],
-            "page": chunks[index]["page"],
-            "section": chunks[index]["section"]
-        })
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": VECTOR_INDEX,
+                "path": "embedding",
+                "queryVector": query_embedding,
+                "numCandidates": max(top_k * 10, 100),
+                "limit": top_k,
+                "filter": vector_filter
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "text": 1,
+                "page": 1,
+                "section": 1,
+                "documentId": 1,
+                "score": {"$meta": "vectorSearchScore"}
+            }
+        }
+    ]
 
-    ranked.sort(key=lambda item: item["score"], reverse=True)
+    try:
+        results = list(chunks_collection.aggregate(pipeline))
 
-    return ranked[:top_k]
-
-
-# ==========================================
-# 10. SUMMARIZE DOCUMENT
-# ==========================================
+        return [
+            {
+                "score": float(result.get("score", 0)),
+                "text": result.get("text", ""),
+                "page": result.get("page", 1),
+                "section": result.get("section", "General")
+            }
+            for result in results
+        ]
+    except Exception as error:
+        print("MongoDB Vector Search error:")
+        print(error)
+        return []
 
 def summarize_document(chunks):
     print("\nGenerating document summary...")
@@ -415,11 +394,6 @@ Create a concise but complete summary of this document.
         print(error)
         return "Sorry, I couldn't generate a summary right now."
 
-
-# ==========================================
-# 11. GROQ ANSWER GENERATION
-# ==========================================
-
 def generate_answer(question, results):
     print("\nGenerating answer...")
 
@@ -444,7 +418,6 @@ You are Quely, a RAG-based document assistant.
 Your job is to answer questions using ONLY the retrieved document context provided by the user.
 
 Rules:
-
 1. Use only the retrieved context.
 2. Do not use outside knowledge.
 3. Do not invent facts.
@@ -488,20 +461,19 @@ User question:
         print(error)
         return "Sorry, I couldn't generate an answer right now."
 
-
-# ==========================================
-# 12. MAIN
-# ==========================================
-
 if __name__ == "__main__":
+    if not DOCUMENT_PATH:
+        print("Please provide a document path.")
+        sys.exit(1)
+
     process_only = "--process-only" in sys.argv
 
-    print("Checking saved vectors...")
+    print("Checking MongoDB for saved vectors...")
 
     saved = load_vectors()
 
     if saved:
-        print("Loaded saved vectors from file.")
+        print("Loaded saved vectors from MongoDB.")
 
         chunks = [
             {
@@ -512,13 +484,7 @@ if __name__ == "__main__":
             for item in saved
         ]
 
-        embeddings = np.asarray(
-            [item["embedding"] for item in saved],
-            dtype=np.float32
-        )
-
-        print("Loading embedding model...")
-        model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        model = get_embedding_model()
 
     else:
         print("Extracting document text...")
@@ -533,21 +499,23 @@ if __name__ == "__main__":
 
         print("Creating chunks...")
         chunks = create_chunks(pages)
-
         print(f"Chunks created: {len(chunks)}")
 
         for index, chunk in enumerate(chunks[:5], start=1):
-            print(
-                f"Chunk {index} | Page {chunk['page']} | {chunk['section']}"
-            )
+            print(f"Chunk {index} | Page {chunk['page']} | {chunk['section']}")
             print(chunk["text"][:220])
             print()
 
         model, embeddings = create_embeddings(chunks)
-        save_vectors(chunks, embeddings)
+
+        save_vectors(
+            chunks,
+            embeddings,
+            document_id=DOCUMENT_ID
+        )
 
     print("\n--------------------------------")
-    print("RAG retrieval + Groq ready.")
+    print("RAG retrieval + MongoDB Vector Search + Groq ready.")
     print("--------------------------------")
 
     if process_only:
@@ -563,7 +531,11 @@ if __name__ == "__main__":
         if "summar" in question.lower():
             answer = summarize_document(chunks)
         else:
-            results = search(question, model, chunks, embeddings)
+            results = search(
+                question,
+                model,
+                document_id=DOCUMENT_ID
+            )
             answer = generate_answer(question, results)
 
         print("\nAnswer:")

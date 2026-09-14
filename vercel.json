@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/rag/:path*",
+      "destination": "/api/rag.py"
+    },
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/api/chats/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    }
+  ]
+}

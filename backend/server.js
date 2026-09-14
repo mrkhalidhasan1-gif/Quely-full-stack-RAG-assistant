@@ -10,33 +10,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB connected"))
-    .catch((error) => console.log("MongoDB error:", error));
+    .catch(error => console.log("MongoDB error:", error));
 
-
-// Authentication routes
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
-
-const documentRoutes = require("./routes/documents");
-app.use("/api/documents", documentRoutes);
 
 const chatRoutes = require("./routes/chats");
 app.use("/api/chats", chatRoutes);
 
-// Test route
 app.get("/", (req, res) => {
-    res.json({
-        message: "Quely backend is running"
+    res.json({ message: "Quely backend is running" });
+});
+
+module.exports = app;
+
+if (require.main === module) {
+    app.listen(5001, () => {
+        console.log("Quely server running on port 5001");
     });
-});
-
-
-const PORT = 5001;
-
-app.listen(PORT, () => {
-    console.log(`Quely server running on port ${PORT}`);
-});
+}
