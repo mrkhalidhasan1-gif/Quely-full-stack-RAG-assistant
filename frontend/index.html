@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quely — Ask. Retrieve. Understand.</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo">Quely<span>.</span></div>
+
+        <nav>
+            <a href="#">Features</a>
+            <a href="#">How it works</a>
+            <a href="#">FAQ</a>
+        </nav>
+
+        <div class="header-actions">
+            <button class="login-btn" onclick="showAuth('login')">Log in</button>
+            <button class="signup-btn" onclick="showAuth('signup')">Get started</button>
+        </div>
+    </header>
+
+
+    <!-- LANDING PAGE -->
+    <main id="landingPage">
+        <section class="hero">
+            <!-- LEFT -->
+            <div class="hero-content">
+                <div class="badge">✦ AI-powered document intelligence</div>
+
+                <h1>
+                    Ask your documents.
+                    <span>Get real answers.</span>
+                </h1>
+
+                <p>
+                    Upload a document or enter a website URL.
+                    Quely finds the relevant information and gives
+                    you grounded answers with sources.
+                </p>
+
+                <div class="hero-buttons">
+                    <button class="primary-btn" onclick="showGuestMode()">Try Quely →</button>
+                    <button class="secondary-btn" onclick="showAuth('signup')">Create account</button>
+                </div>
+
+                <div class="source-types">
+                    <span>PDF</span>
+                    <span>DOCX</span>
+                    <span>TXT</span>
+                    <span>WEBSITE</span>
+                </div>
+            </div>
+
+
+            <!-- RIGHT AI VISUAL -->
+            <div class="ai-scene">
+                <div class="floating-card document-card">
+                    <div class="card-icon">▤</div>
+                    <div>
+                        <strong>Research.pdf</strong>
+                        <small>42 pages</small>
+                    </div>
+                </div>
+
+                <div class="floating-card question-card">
+                    <span>Ask</span>
+                    <p>What are the main findings?</p>
+                </div>
+
+
+                <!-- ROBOT -->
+                <div class="robot">
+                    <div class="antenna">
+                        <div class="antenna-light"></div>
+                    </div>
+
+                    <div class="robot-head">
+                        <div class="robot-face">
+                            <div class="eye left-eye"></div>
+                            <div class="eye right-eye"></div>
+                            <div class="robot-smile"></div>
+                        </div>
+                    </div>
+
+                    <div class="robot-body">
+                        <div class="robot-screen">
+                            <span>AI</span>
+                        </div>
+                    </div>
+
+                    <div class="robot-arm left-arm"></div>
+                    <div class="robot-arm right-arm"></div>
+                </div>
+
+
+                <div class="floating-card answer-card">
+                    <div class="answer-top">
+                        <span>Quely</span>
+                        <span class="check">✓</span>
+                    </div>
+
+                    <p>Based on your source, the main findings are...</p>
+                </div>
+
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+            </div>
+        </section>
+
+
+        <!-- FEATURES -->
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⌕</div>
+                <h3>Ask anything</h3>
+                <p>Ask questions naturally and get relevant answers.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">◈</div>
+                <h3>Grounded answers</h3>
+                <p>Responses are generated using information from your source.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">↗</div>
+                <h3>Chat history</h3>
+                <p>Sign in to save your conversations and sources.</p>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- AUTH PAGE -->
+    <section id="authPage" class="auth-page hidden">
+        <div class="auth-card">
+            <button class="close-btn" onclick="showLanding()">×</button>
+
+            <div class="auth-logo">Quely<span>.</span></div>
+
+
+            <!-- LOGIN -->
+            <div id="loginForm">
+                <h2>Welcome back</h2>
+                <p class="auth-subtitle">Log in to continue to Quely.</p>
+
+                <form onsubmit="login(event)">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="you@example.com" required>
+
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+
+                    <button class="auth-btn" type="submit">Log in</button>
+                </form>
+
+                <p class="switch-auth">
+                    Don't have an account?
+                    <button onclick="showAuth('signup')">Sign up</button>
+                </p>
+            </div>
+
+
+            <!-- SIGNUP -->
+            <div id="signupForm" class="hidden">
+                <h2>Create your account</h2>
+                <p class="auth-subtitle">Save your chats and sources with Quely.</p>
+
+                <form onsubmit="signup(event)">
+                    <label>Name</label>
+                    <input type="text" id="signupName" placeholder="Your name" required>
+
+                    <label>Email</label>
+                    <input type="email" id="signupEmail" placeholder="you@example.com" required>
+
+                    <label>Password</label>
+                    <input type="password" id="signupPassword" placeholder="Create a password" minlength="6" required>
+
+                    <button class="auth-btn" type="submit">Create account</button>
+                </form>
+
+                <p class="switch-auth">
+                    Already have an account?
+                    <button onclick="showAuth('login')">Log in</button>
+                </p>
+            </div>
+
+            <div id="authMessage"></div>
+        </div>
+    </section>
+
+
+    <!-- GUEST PAGE -->
+    <section id="guestPage" class="guest-page hidden">
+        <div class="guest-content">
+            <button class="guest-back-btn" onclick="showLanding()">← Back</button>
+
+            <div class="badge">✦ Guest mode</div>
+
+            <h1>
+                Ask your source.
+                <span>Get your answer.</span>
+            </h1>
+
+            <p>Upload a document or enter a public website URL to start asking questions.</p>
+
+            <div class="guest-card">
+                <h3>Upload your document</h3>
+                <p>PDF, DOCX or TXT</p>
+
+                <input type="file" id="guestFile" accept=".pdf,.docx,.txt">
+
+                <div class="guest-or">OR</div>
+
+                <input type="url" id="guestUrl" placeholder="https://example.com">
+
+                <button class="primary-btn" onclick="processGuestSource()">Process Source →</button>
+
+                <p id="guestMessage"></p>
+            </div>
+
+            <p class="guest-note">
+                Guest conversations are temporary.<br>
+                Create an account to save your chat history.
+            </p>
+        </div>
+    </section>
+
+
+    <!-- DASHBOARD -->
+    <section id="dashboardPage" class="dashboard hidden">
+        <aside class="sidebar">
+            <div class="sidebar-logo">Quely<span>.</span></div>
+
+            <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
+
+            <div class="history-title">RECENT CHATS</div>
+
+            <div id="chatHistory" class="chat-history">
+                <p class="empty-history">No conversations yet.</p>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="user-info">
+                    <div class="user-avatar">K</div>
+
+                    <div>
+                        <strong id="dashboardUserName">Khalid</strong>
+                        <small id="dashboardUserEmail">khalid@example.com</small>
+                    </div>
+                </div>
+
+                <button onclick="logout()" class="logout-btn">Log out</button>
+            </div>
+        </aside>
+
+
+        <main class="dashboard-main">
+            <button class="dashboard-back-btn" onclick="dashboardBack()">← Back</button>
+
+            <div class="dashboard-top">
+                <span class="workspace-label">✦ Your workspace</span>
+            </div>
+
+            <div class="dashboard-content">
+                <h1>
+                    What do you want to
+                    <span>understand today?</span>
+                </h1>
+
+                <p>Upload a source and start asking questions.</p>
+
+
+                <div class="source-options">
+                    <div class="source-card">
+                        <div class="source-icon">↑</div>
+
+                        <h3>Upload a document</h3>
+                        <p>PDF, DOCX or TXT</p>
+
+                        <input
+                            type="file"
+                            id="dashboardFile"
+                            accept=".pdf,.docx,.txt"
+                            hidden
+                            onchange="uploadDocument()"
+                        >
+
+                        <button
+                            type="button"
+                            class="source-btn"
+                            onclick="document.getElementById('dashboardFile').click()"
+                        >
+                            Choose file
+                        </button>
+                    </div>
+
+
+                    <div class="source-card">
+                        <div class="source-icon">↗</div>
+
+                        <h3>Add a website</h3>
+                        <p>Ask questions about a public URL</p>
+
+                        <input
+                            type="url"
+                            id="dashboardUrl"
+                            placeholder="https://example.com"
+                        >
+
+                        <button type="button" class="source-btn" onclick="addWebsite()">
+                            Add website
+                        </button>
+                    </div>
+                </div>
+
+
+                <div id="dashboardStatus" class="dashboard-status"></div>
+
+
+                <!-- CHAT -->
+                <div id="chatContainer" class="chat-container hidden">
+                    <div class="chat-header">
+                        <div class="chat-ai-info">
+                            <div class="chat-ai-avatar">✦</div>
+
+                            <div>
+                                <strong>Quely AI</strong>
+                                <span><i></i> Document ready</span>
+                            </div>
+                        </div>
+
+                        <div class="chat-source">
+                            <span>▤</span>
+                            <span id="activeDocumentName">Document</span>
+                        </div>
+                    </div>
+
+
+                    <div id="chatMessages" class="chat-messages">
+                        <div class="ai-message message-enter">
+                            <div class="message-avatar">✦</div>
+
+                            <div class="message-content">
+                                <span class="message-label">Quely AI</span>
+                                <p>
+                                    I've analyzed your document. Ask me anything
+                                    about it and I'll find the relevant information.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="typing-indicator hidden" id="typingIndicator">
+                        <div class="message-avatar">✦</div>
+
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+
+
+                    <div class="chat-input-area">
+                        <textarea
+                            id="chatInput"
+                            placeholder="Ask anything about your document..."
+                            rows="1"
+                            onkeydown="handleChatKey(event)"
+                        ></textarea>
+
+                        <button type="button" id="sendChatBtn" onclick="sendMessage()">↑</button>
+                    </div>
+
+                    <div class="chat-disclaimer">
+                        Quely answers based on your uploaded source.
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div>Quely — Full-Stack RAG AI Assistant</div>
+        <div class="creator">Built by <strong>Khalid Hasan</strong></div>
+    </footer>
+
+
+    <script src="script.js"></script>
+</body>
+</html>

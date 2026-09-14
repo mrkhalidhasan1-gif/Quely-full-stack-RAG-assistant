@@ -1,0 +1,11 @@
+node_modules/
+**/.env
+.env
+.DS_Store
+.vscode/
+__pycache__/
+*.pyc
+rag/vectors_*.json
+/tmp/
+*.log
+rag/vectors.json
