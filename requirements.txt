@@ -3,7 +3,7 @@ pymupdf
 python-dotenv
 python-docx
 groq
-sentence-transformers
+fastembed
 pymongo
 flask
 PyJWT
