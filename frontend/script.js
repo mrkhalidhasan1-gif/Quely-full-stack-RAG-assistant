@@ -572,3 +572,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
+
+
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById("dashboardSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    if (!sidebar || !overlay) return;
+    sidebar.classList.toggle("open");
+    overlay.classList.toggle("active");
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.getElementById("dashboardSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    if (!sidebar || !overlay) return;
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+}

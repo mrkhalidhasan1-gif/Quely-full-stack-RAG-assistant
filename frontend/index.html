@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Quely — Ask. Retrieve. Understand.</title>
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -31,6 +31,7 @@
     <!-- LANDING PAGE -->
     <main id="landingPage">
         <section class="hero">
+
             <!-- LEFT -->
             <div class="hero-content">
                 <div class="badge">✦ AI-powered document intelligence</div>
@@ -237,7 +238,12 @@
 
     <!-- DASHBOARD -->
     <section id="dashboardPage" class="dashboard hidden">
-        <aside class="sidebar">
+
+        <!-- MOBILE SIDEBAR -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileSidebar()">☰</button>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
+
+        <aside class="sidebar" id="dashboardSidebar">
             <div class="sidebar-logo">Quely<span>.</span></div>
 
             <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
