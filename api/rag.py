@@ -253,11 +253,12 @@ def fetch_website(url):
         raise ValueError("Invalid website URL")
     req = urllib.request.Request(url, headers={"User-Agent": "Quely/1.0"})
     with urllib.request.urlopen(req, timeout=15) as response:
-        html = response.read(3_000_000).decode("utf-8", errors="ignore")
+        html = response.read(1_000_000).decode("utf-8", errors="ignore")
     html = re.sub(r"<script[\s\S]*?</script>", " ", html, flags=re.I)
     html = re.sub(r"<style[\s\S]*?</style>", " ", html, flags=re.I)
     text = re.sub(r"<[^>]+>", " ", html)
     text = re.sub(r"\s+", " ", text).strip()
+    text = text[:50000]
     if not text:
         raise ValueError("No readable content found on website")
     return parsed, text
@@ -307,6 +308,7 @@ def website():
         document_id, name, count = process_website(str((request.get_json(silent=True) or {}).get("url", "")).strip(), user_id)
         return jsonify({"message": "Website processed successfully.", "documentId": document_id, "documentName": name, "chunks": count})
     except Exception as error:
+        print("Website error:", error)
         return jsonify({"message": str(error)}), 400
 
 @app.route("/api/rag/guest-upload", methods=["POST"])
@@ -319,6 +321,7 @@ def guest_website():
         document_id, name, count = process_website(str((request.get_json(silent=True) or {}).get("url", "")).strip(), None)
         return jsonify({"message": "Website processed successfully.", "documentId": document_id, "documentName": name, "chunks": count})
     except Exception as error:
+        print("Guest website error:", error)
         return jsonify({"message": str(error)}), 400
 
 @app.route("/api/rag/ask", methods=["POST"])
