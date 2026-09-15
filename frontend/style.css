@@ -1229,8 +1229,8 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         align-items:center;
         justify-content:center;
         position:fixed;
-        top:90px;
-        left:14px;
+        top:170px;
+        left:28px;
         width:42px;
         height:42px;
         border:1px solid rgba(125,164,220,.18);
@@ -1240,6 +1240,13 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         color:white;
         font-size:22px;
         z-index:2000;
+    }
+
+    body:has(.sidebar.open) .mobile-menu-btn{
+    top:24px;
+    left:220px;
+    width:42px;
+    height:42px;
     }
 
     .sidebar-overlay{
@@ -1351,8 +1358,8 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
 
     .dashboard-back-btn{
         position:absolute;
-        top:90px;
-        left:70px;
+        top:115px;
+        left:28px;
         margin:0;
         height:42px;
         padding:0 16px;
