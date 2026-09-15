@@ -43,7 +43,7 @@ documents_collection = db["documents"]
 chats_collection = db["chats"]
 
 groq_client = Groq(api_key=GROQ_API_KEY)
-embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+embedding_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", cache_dir="/tmp/fastembed")
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
 TOP_K = 8
