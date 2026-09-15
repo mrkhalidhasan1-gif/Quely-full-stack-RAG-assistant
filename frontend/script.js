@@ -1,10 +1,17 @@
 const LOCAL = ["localhost","127.0.0.1"].includes(window.location.hostname);
-const API_URL = LOCAL ? "http://localhost:5001" : "";
-const RAG_URL = LOCAL ? "http://localhost:8000" : "";
+const API_URL = window.QUELY_API_URL || (LOCAL ? "http://localhost:5001" : "");
+const RAG_URL = window.QUELY_RAG_URL || (LOCAL ? "http://localhost:8000" : "");
 
 let currentDocumentId = null;
 let currentDocumentName = null;
 let isGuestMode = false;
+
+function getAuthHeaders(extraHeaders = {}) {
+    const token = localStorage.getItem("quelyToken");
+    const headers = {...extraHeaders};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
 
 function showAuth(type) {
     document.getElementById("landingPage").classList.add("hidden");
@@ -33,10 +40,12 @@ function showLanding() {
 
 async function signup(event) {
     event.preventDefault();
-    const name = document.getElementById("signupName").value;
-    const email = document.getElementById("signupEmail").value;
+
+    const name = document.getElementById("signupName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
     const password = document.getElementById("signupPassword").value;
     const message = document.getElementById("authMessage");
+
     message.textContent = "Creating your account...";
 
     try {
@@ -45,6 +54,7 @@ async function signup(event) {
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({name,email,password})
         });
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -64,9 +74,11 @@ async function signup(event) {
 
 async function login(event) {
     event.preventDefault();
-    const email = document.getElementById("loginEmail").value;
+
+    const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value;
     const message = document.getElementById("authMessage");
+
     message.textContent = "Logging in...";
 
     try {
@@ -75,6 +87,7 @@ async function login(event) {
             headers: {"Content-Type":"application/json"},
             body: JSON.stringify({email,password})
         });
+
         const data = await response.json();
 
         if (!response.ok) {
@@ -97,11 +110,14 @@ function showGuestMode() {
     isGuestMode = true;
     currentDocumentId = null;
     currentDocumentName = null;
+
     document.getElementById("landingPage").classList.add("hidden");
     document.getElementById("authPage").classList.add("hidden");
     document.getElementById("dashboardPage").classList.add("hidden");
+
     document.querySelector(".header").classList.remove("hidden");
     document.querySelector(".footer").classList.remove("hidden");
+
     document.getElementById("guestPage").classList.remove("hidden");
     document.getElementById("guestMessage").textContent = "";
 }
@@ -130,7 +146,6 @@ async function processGuestSource() {
 
     try {
         let response;
-        let data;
 
         if (url) {
             response = await fetch(`${RAG_URL}/api/rag/guest-website`, {
@@ -141,13 +156,14 @@ async function processGuestSource() {
         } else {
             const formData = new FormData();
             formData.append("document", file);
+
             response = await fetch(`${RAG_URL}/api/rag/guest-upload`, {
                 method: "POST",
                 body: formData
             });
         }
 
-        data = await response.json();
+        const data = await response.json();
 
         if (!response.ok) {
             message.textContent = data.message || "Source processing failed.";
@@ -156,6 +172,7 @@ async function processGuestSource() {
 
         currentDocumentId = data.documentId;
         currentDocumentName = data.documentName || (file ? file.name : "Website");
+
         showGuestWorkspace(currentDocumentName);
     } catch (error) {
         console.error(error);
@@ -165,37 +182,48 @@ async function processGuestSource() {
 
 function showGuestWorkspace(documentName) {
     isGuestMode = true;
+
     document.getElementById("guestPage").classList.add("hidden");
     document.getElementById("landingPage").classList.add("hidden");
     document.getElementById("authPage").classList.add("hidden");
+
     document.querySelector(".header").classList.add("hidden");
     document.querySelector(".footer").classList.add("hidden");
+
     document.getElementById("dashboardPage").classList.remove("hidden");
+
     document.getElementById("dashboardUserName").textContent = "Guest";
     document.getElementById("dashboardUserEmail").textContent = "Temporary session";
     document.querySelector(".user-avatar").textContent = "G";
     document.querySelector(".logout-btn").classList.add("hidden");
+
     document.getElementById("chatHistory").innerHTML = `<p class="empty-history">Guest conversations are temporary.</p>`;
     document.getElementById("activeDocumentName").textContent = documentName;
+
     showChatContainer();
     resetChatMessages();
 }
 
 function openDashboard(user, restoreLatestChat = false) {
     isGuestMode = false;
+
     document.getElementById("landingPage").classList.add("hidden");
     document.getElementById("authPage").classList.add("hidden");
     document.getElementById("guestPage").classList.add("hidden");
+
     document.querySelector(".header").classList.add("hidden");
     document.querySelector(".footer").classList.add("hidden");
+
     document.getElementById("dashboardPage").classList.remove("hidden");
     document.querySelector(".logout-btn").classList.remove("hidden");
+
     document.getElementById("dashboardUserName").textContent = user.name;
     document.getElementById("dashboardUserEmail").textContent = user.email;
     document.querySelector(".user-avatar").textContent = user.name.charAt(0).toUpperCase();
 
-    if (restoreLatestChat) loadChatHistory(true);
-    else {
+    if (restoreLatestChat) {
+        loadChatHistory(true);
+    } else {
         loadChatHistory(false);
         startNewChat(false);
     }
@@ -207,10 +235,10 @@ function startNewChat(showStatus = true) {
 
     const chatContainer = document.getElementById("chatContainer");
     const sourceOptions = document.querySelector(".source-options");
-    const dashboardContent = document.querySelector(".dashboard-content");
 
     chatContainer.classList.add("hidden");
     sourceOptions.classList.remove("hidden");
+
     document.getElementById("dashboardStatus").textContent = "";
 
     const fileInput = document.getElementById("dashboardFile");
@@ -223,8 +251,9 @@ function startNewChat(showStatus = true) {
     document.getElementById("chatInput").value = "";
     document.getElementById("activeDocumentName").textContent = "No source selected";
 
-    if (showStatus) document.getElementById("dashboardStatus").textContent = "Start a new chat by uploading a source.";
-    if (dashboardContent) dashboardContent.scrollTop = 0;
+    if (showStatus) {
+        document.getElementById("dashboardStatus").textContent = "Start a new chat by uploading a source.";
+    }
 }
 
 function showChatContainer() {
@@ -234,7 +263,7 @@ function showChatContainer() {
 
 function resetChatMessages() {
     document.getElementById("chatMessages").innerHTML = `
-        <div class="ai-message message-enter">
+        <div class="ai-message">
             <div class="message-avatar">✦</div>
             <div class="message-content">
                 <span class="message-label">Quely AI</span>
@@ -282,9 +311,7 @@ async function uploadDocument() {
 
         const response = await fetch(`${RAG_URL}/api/rag/upload`, {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem("quelyToken")}`
-            },
+            headers: getAuthHeaders(),
             body: formData
         });
 
@@ -300,6 +327,7 @@ async function uploadDocument() {
 
         status.textContent = "File processed successfully.";
         document.getElementById("activeDocumentName").textContent = currentDocumentName;
+
         showChatContainer();
         resetChatMessages();
     } catch (error) {
@@ -323,10 +351,7 @@ async function addWebsite() {
     try {
         const response = await fetch(`${RAG_URL}/api/rag/website`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem("quelyToken")}`
-            },
+            headers: getAuthHeaders({"Content-Type":"application/json"}),
             body: JSON.stringify({url})
         });
 
@@ -342,6 +367,7 @@ async function addWebsite() {
 
         status.textContent = "Website processed successfully.";
         document.getElementById("activeDocumentName").textContent = currentDocumentName;
+
         showChatContainer();
         resetChatMessages();
     } catch (error) {
@@ -370,9 +396,7 @@ async function sendMessage() {
 
     try {
         const endpoint = isGuestMode ? `${RAG_URL}/api/rag/guest-ask` : `${RAG_URL}/api/rag/ask`;
-        const headers = {"Content-Type":"application/json"};
-
-        if (!isGuestMode) headers.Authorization = `Bearer ${localStorage.getItem("quelyToken")}`;
+        const headers = isGuestMode ? {"Content-Type":"application/json"} : getAuthHeaders({"Content-Type":"application/json"});
 
         const response = await fetch(endpoint, {
             method: "POST",
@@ -442,7 +466,7 @@ function addAIMessage(message, sources = []) {
     const sourceList = div.querySelector(".source-list");
 
     if (sources && sources.length) {
-        sources.slice(0, 3).forEach(source => {
+        sources.slice(0,3).forEach(source => {
             const sourceChip = document.createElement("span");
             sourceChip.className = "source-chip";
             sourceChip.textContent = source.page ? `Page ${source.page}` : "Source";
@@ -513,7 +537,9 @@ async function loadChatHistory(restoreLatestChat = false) {
             historyContainer.appendChild(chatItem);
         });
 
-        if (restoreLatestChat && data.chats.length) openChatFromHistory(data.chats[0]);
+        if (restoreLatestChat && data.chats.length) {
+            openChatFromHistory(data.chats[0]);
+        }
     } catch (error) {
         console.error("Unable to load chat history:", error);
     }
@@ -531,8 +557,6 @@ async function openChatFromHistory(chat) {
             method: "POST",
             headers: {"Authorization": `Bearer ${token}`}
         });
-
-        loadChatHistory(false);
     } catch (error) {
         console.error("Unable to update chat activity:", error);
     }
@@ -545,8 +569,11 @@ async function openChatFromHistory(chat) {
     messagesContainer.innerHTML = "";
 
     chat.messages.forEach(message => {
-        if (message.role === "user") addUserMessage(message.content);
-        else addAIMessage(message.content, message.sources || []);
+        if (message.role === "user") {
+            addUserMessage(message.content);
+        } else {
+            addAIMessage(message.content, message.sources || []);
+        }
     });
 
     scrollChatToBottom();
@@ -558,7 +585,36 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById("dashboardSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!sidebar || !overlay) return;
+
+    sidebar.classList.toggle("open");
+    overlay.classList.toggle("active");
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.getElementById("dashboardSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!sidebar || !overlay) return;
+
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    const loginForm = document.getElementById("loginFormElement");
+    const signupForm = document.getElementById("signupFormElement");
+
+    if (loginForm) loginForm.addEventListener("submit", login);
+    if (signupForm) signupForm.addEventListener("submit", signup);
+
+    const chatInput = document.getElementById("chatInput");
+    if (chatInput) chatInput.addEventListener("keydown", handleChatKey);
+
     const token = localStorage.getItem("quelyToken");
     const userData = localStorage.getItem("quelyUser");
 
@@ -572,20 +628,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 });
-
-
-function toggleMobileSidebar() {
-    const sidebar = document.getElementById("dashboardSidebar");
-    const overlay = document.getElementById("sidebarOverlay");
-    if (!sidebar || !overlay) return;
-    sidebar.classList.toggle("open");
-    overlay.classList.toggle("active");
-}
-
-function closeMobileSidebar() {
-    const sidebar = document.getElementById("dashboardSidebar");
-    const overlay = document.getElementById("sidebarOverlay");
-    if (!sidebar || !overlay) return;
-    sidebar.classList.remove("open");
-    overlay.classList.remove("active");
-}
