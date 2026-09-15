@@ -585,24 +585,26 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function toggleMobileSidebar() {
-    const sidebar = document.getElementById("dashboardSidebar");
-    const overlay = document.getElementById("sidebarOverlay");
-
-    if (!sidebar || !overlay) return;
-
-    sidebar.classList.toggle("open");
-    overlay.classList.toggle("active");
+function toggleMobileSidebar(){
+    const sidebar=document.getElementById("dashboardSidebar");
+    const overlay=document.getElementById("sidebarOverlay");
+    const button=document.getElementById("mobileMenuBtn");
+    if(!sidebar||!overlay||!button)return;
+    const isOpen=sidebar.classList.toggle("open");
+    overlay.classList.toggle("active",isOpen);
+    button.innerHTML=isOpen?"←":"☰";
+    button.setAttribute("aria-label",isOpen?"Close menu":"Open menu");
 }
 
-function closeMobileSidebar() {
-    const sidebar = document.getElementById("dashboardSidebar");
-    const overlay = document.getElementById("sidebarOverlay");
-
-    if (!sidebar || !overlay) return;
-
+function closeMobileSidebar(){
+    const sidebar=document.getElementById("dashboardSidebar");
+    const overlay=document.getElementById("sidebarOverlay");
+    const button=document.getElementById("mobileMenuBtn");
+    if(!sidebar||!overlay||!button)return;
     sidebar.classList.remove("open");
     overlay.classList.remove("active");
+    button.innerHTML="☰";
+    button.setAttribute("aria-label","Open menu");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
