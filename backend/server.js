@@ -10,9 +10,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 })
     .then(() => console.log("MongoDB connected"))
-    .catch(error => console.log("MongoDB error:", error));
+    .catch(error => {
+        console.error("MongoDB error:", error);
+        if (error.reason?.servers) {
+            for (const [host, server] of error.reason.servers) {
+                console.error("MongoDB server:", host, server.error || "No detailed error");
+            }
+        }
+    });
+
+app.use(async (req, res, next) => {
+    try {
+        await mongoose.connection.asPromise();
+        next();
+    } catch (error) {
+        console.error("MongoDB request connection error:", error);
+        res.status(503).json({ message: "Database temporarily unavailable." });
+    }
+});
 
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
