@@ -2,7 +2,11 @@ import os
 
 os.environ["HF_HOME"] = "/tmp/huggingface"
 os.environ["HF_HUB_CACHE"] = "/tmp/huggingface/hub"
+os.environ["HF_XET_CACHE"] = "/tmp/huggingface/xet"
+os.environ["HF_ASSETS_CACHE"] = "/tmp/huggingface/assets"
 os.environ["HF_HUB_DISABLE_XET"] = "1"
+os.environ["XDG_CACHE_HOME"] = "/tmp/cache"
+os.environ["FASTEMBED_CACHE_PATH"] = "/tmp/fastembed"
 
 import re
 import uuid
