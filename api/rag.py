@@ -1,4 +1,9 @@
 import os
+
+os.environ["HF_HOME"] = "/tmp/huggingface"
+os.environ["HF_HUB_CACHE"] = "/tmp/huggingface/hub"
+os.environ["HF_HUB_DISABLE_XET"] = "1"
+
 import re
 import uuid
 import urllib.request
