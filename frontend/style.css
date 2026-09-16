@@ -1210,6 +1210,7 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
     }
 
     .hero-buttons{flex-direction:column}
+
     .ai-scene{
         transform:scale(.8);
         margin:-30px 0;
@@ -1224,31 +1225,67 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         position:relative;
     }
 
+    /* HOME BACK BUTTON */
+    .dashboard-back-btn{
+        position:absolute;
+        top:20px;
+        left:28px;
+        margin:0;
+        height:42px;
+        padding:0 16px;
+        border:1px solid rgba(125,164,220,.18);
+        border-radius:12px;
+        background:rgba(10,23,42,.92);
+        backdrop-filter:blur(14px);
+        color:#dce6f7;
+        font-size:16px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        z-index:2000;
+    }
+
+    /* SIDEBAR MENU BUTTON */
     .mobile-menu-btn{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:absolute;
-    top:20px;
-    left:28px;
-    width:42px;
-    height:42px;
-    border:1px solid rgba(125,164,220,.18);
-    border-radius:12px;
-    background:rgba(10,23,42,.92);
-    backdrop-filter:blur(14px);
-    color:white;
-    font-size:22px;
-    z-index:2000;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        position:absolute;
+        top:72px;
+        left:28px;
+        width:54px;
+        height:54px;
+        border:1px solid rgba(125,164,220,.18);
+        border-radius:14px;
+        background:rgba(10,23,42,.92);
+        backdrop-filter:blur(14px);
+        color:white;
+        font-size:26px;
+        z-index:2000;
+        cursor:pointer;
     }
 
-    body:has(.sidebar.open) .mobile-menu-btn{
-    top:24px;
-    left:220px;
-    width:42px;
-    height:42px;
+    /* MOBILE SIDEBAR */
+    .sidebar{
+        position:fixed;
+        top:0;
+        left:0;
+        width:61vw;
+        max-width:270px;
+        height:100dvh;
+        min-height:100dvh;
+        padding:24px 18px;
+        transform:translateX(-100%);
+        transition:transform .28s ease;
+        border-right:1px solid rgba(125,164,220,.14);
+        border-bottom:none;
+        z-index:1800;
+        overflow:hidden;
     }
 
+    .sidebar.open{transform:translateX(0)}
+
+    /* SIDEBAR OVERLAY */
     .sidebar-overlay{
         display:block;
         position:fixed;
@@ -1265,24 +1302,6 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         visibility:visible;
     }
 
-    .sidebar{
-        position:fixed;
-        top:0;
-        left:0;
-        width:270px;
-        height:100dvh;
-        min-height:100dvh;
-        padding:24px 18px;
-        transform:translateX(-100%);
-        transition:transform .28s ease;
-        border-right:1px solid rgba(125,164,220,.14);
-        border-bottom:none;
-        z-index:1800;
-        overflow:hidden;
-    }
-
-    .sidebar.open{transform:translateX(0)}
-
     .history-title,.chat-history{display:block}
 
     .chat-history{
@@ -1295,17 +1314,44 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         border-top:1px solid rgba(125,164,220,.1);
     }
 
+    /* SIDEBAR OPEN STATE */
+    body:has(.sidebar.open) .dashboard-back-btn{
+        display:none;
+    }
+
+    body:has(.sidebar.open) .mobile-menu-btn{
+        position:fixed;
+        top:24px;
+        left:auto;
+        right:16px;
+        width:46px;
+        height:46px;
+        font-size:25px;
+        z-index:2001;
+    }
+
     .dashboard-main{
         width:100%;
         min-height:100dvh;
     }
 
-    .dashboard-top{padding:20px 20px 20px 70px}
+    .dashboard-top{
+        position:relative;
+        min-height:150px;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+        padding:0 20px 22px 95px;
+    }
 
-    .dashboard-back-btn{margin:18px 20px 0 70px}
+    .workspace-label{
+        margin:0;
+        font-size:20px;
+        padding:14px 28px;
+        text-align:center;
+    }
 
     .dashboard-content{padding:45px 16px 24px}
-
     .dashboard-content h1{font-size:34px}
 
     .source-options{grid-template-columns:1fr}
@@ -1319,8 +1365,7 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
 
     .chat-header{padding:12px}
     .chat-source{max-width:130px}
-    .chat-messages{padding:18px 14px}
-    .chat-messages{padding-bottom:18px}
+    .chat-messages{padding:18px 14px 18px}
     .message-content{max-width:82%}
 
     .chat-input-area{
@@ -1349,46 +1394,12 @@ form input:focus,.guest-card input:focus,.source-card input[type="url"]:focus{
         font-size:9px;
     }
 
-        .chat-input-area textarea,
+    /* iOS INPUT ZOOM FIX */
+    .chat-input-area textarea,
     #chatInput,
     input,
     select{
         font-size:16px !important;
-    }
-
-    .dashboard-back-btn{
-    position:absolute;
-    top:68px;
-    left:28px;
-    margin:0;
-    height:42px;
-    padding:0 16px;
-    border:1px solid rgba(125,164,220,.18);
-    border-radius:12px;
-    background:rgba(10,23,42,.92);
-    backdrop-filter:blur(14px);
-    color:#dce6f7;
-    font-size:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:2000;
-    }
-
-    .dashboard-top{
-        position:relative;
-        min-height:160px;
-        display:flex;
-        align-items:flex-end;
-        justify-content:center;
-        padding:0 20px 22px;
-    }
-
-    .workspace-label{
-        margin:0 auto;
-        font-size:20px;
-        padding:12px 26px;
-        text-align:center;
     }
 }
 
